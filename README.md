@@ -5,341 +5,412 @@
 
 Think of it as a process that tries to answer: "When the news about a company is positive or negative, does the stock tend to move in the same direction?"
 
-### Step 1: Choose a Stock
+# Overall Workflow
 
-You enter any stock ticker, such as:
+When you run the program, it asks you for a ticker (or you provide one through the command line).
 
-* Reliance
-* TCS
-* Infosys
+Example:
+
+* AAPL
+* TSLA
+* NVDA
+* RELIANCE.NS
+* TCS.NS
+* BTC-USD
+* GC=F (Gold Futures)
+
+Once the ticker is chosen, everything else is automatic.
+
+---
+
+# Step 1: Build News Search Terms
+
+The program first determines **what keywords should be searched**.
+
+For example,
+
+Ticker:
+
+```
+AAPL
+```
+
+becomes searches like
+
 * Apple
-* Microsoft
+* Apple price
+* Apple forecast
 
-The ticker determines which company will be analyzed.
+For Gold Futures,
 
-## Step 2: Collect News Articles
+```
+GC=F
+```
 
-The system searches multiple financial and news sources for recent articles related to the chosen company.
+becomes
 
-For example, if you select Reliance, it gathers articles discussing:
+* gold
+* gold price
+* gold forecast
 
-* Reliance Industries
-* Reliance stock
-* Reliance business developments
-* Reliance earnings
-* Reliance acquisitions
-* Reliance investments
+This increases the chances of finding relevant news instead of simply searching the ticker symbol.
 
-Using multiple sources helps reduce the risk of missing important news.
+---
 
-## Step 3: Extract the Actual Article Content
+# Step 2: Download News Articles
 
-News websites contain many things besides the article itself:
+Next it searches multiple news RSS feeds.
 
-* Advertisements
-* Navigation menus
-* Subscription prompts
-* Related article links
-* Social media buttons
+Instead of reading only headlines, it collects links to many news articles.
 
-The system removes these unwanted elements and keeps only the main article text.
+For every search term, it gathers articles from more than one source to improve coverage.
 
-The goal is to analyze what the article is actually saying.
+If the same article appears twice, duplicates are removed.
 
-## Step 4: Break the Article into Sentences
+The result is a clean list of unique articles.
 
-A news article can contain:
+---
 
-> Reliance reported record profits this quarter.
+# Step 3: Download the Actual Article
 
-> The company plans a major expansion into renewable energy.
+News RSS feeds only provide titles and links.
 
-> Market analysts remain optimistic about growth.
+The program visits each article and downloads the **full article text**.
 
-Instead of evaluating the entire article at once, the system evaluates each sentence individually.
+While doing so, it removes things like
 
-This provides more accurate sentiment measurement.
+* advertisements
+* navigation menus
+* cookie notices
+* subscription prompts
+* copyright notices
+* social media buttons
+* other unwanted webpage text
 
-## Step 5: Measure Financial Sentiment
+Only meaningful news paragraphs are kept.
 
-Each sentence is classified as:
+---
+
+# Step 4: Break the Article into Sentences
+
+Rather than treating the entire article as one block,
+
+it splits it into individual sentences.
+
+Example:
+
+Original article
+
+> Apple announced record earnings. Investors welcomed the results. Analysts increased their price targets.
+
+becomes
+
+Sentence 1
+
+Sentence 2
+
+Sentence 3
+
+Each sentence will be evaluated independently.
+
+---
+
+# Step 5: Determine Sentiment of Every Sentence
+
+Every sentence receives a sentiment score.
+
+Possible outcomes include:
 
 * Positive
 * Negative
 * Neutral
 
-Examples:
-
-| Sentence                           | Sentiment |
-| ---------------------------------- | --------- |
-| Company reports record profits     | Positive  |
-| Earnings decline sharply           | Negative  |
-| Board meeting scheduled next month | Neutral   |
-
-Financial language differs from normal language.
-
-For example:
-
-> "Operating margin expanded by 300 basis points"
-
-is positive financially even though it contains no obvious emotional words.
-
-The model is specifically trained on financial news.
-
-## Step 6: Create an Article Score
-
-After scoring all sentences, the system creates one sentiment score for the entire article.
-
-Example:
-
-| Article                    | Score |
-| -------------------------- | ----- |
-| Strong earnings beat       | +0.75 |
-| Regulatory concerns emerge | -0.62 |
-| New product launch         | +0.28 |
-
-Positive values indicate bullish news.
-
-Negative values indicate bearish news.
-
-Values near zero indicate neutral news.
-
----
-
-## Step 7: Aggregate All Articles for the Day
-
-A company may have many news articles in one day.
-
-Example:
-
-| Article              | Score |
-| -------------------- | ----- |
-| Earnings beat        | +0.80 |
-| New expansion        | +0.50 |
-| Management reshuffle | -0.10 |
-
-Daily sentiment becomes the average of all article scores.
-
-Example:
+Instead of only assigning labels, every sentence also receives a numerical score between roughly
 
 ```
-(+0.80 + 0.50 - 0.10) / 3
-= +0.40
+-1  -------------------- 0 -------------------- +1
+Very Negative         Neutral            Very Positive
 ```
 
-The final daily sentiment is:
-
-**+0.40 (Positive Day)**
+This gives a much richer measure than simple positive/negative classification.
 
 ---
 
-## Step 8: Build a Sentiment Time Series
+# Step 6: Compute the Overall Article Sentiment
 
-Every day a new sentiment value is stored.
+Once every sentence has been scored,
 
-Example:
+the article's overall sentiment is calculated.
 
-| Date  | Sentiment |
-| ----- | --------- |
-| Jan 1 | +0.40     |
-| Jan 2 | +0.12     |
-| Jan 3 | -0.35     |
-| Jan 4 | +0.55     |
+The program gives **more importance to the first few sentences**, because news articles usually present the key information at the beginning.
 
-Over time this becomes a historical sentiment database.
+For example,
 
-This is extremely important because a single day's sentiment is not useful for analysis.
+If an article contains
 
-You need months of data.
+Positive
 
----
+Positive
 
-## Step 9: Download Historical Stock Prices
+Neutral
 
-The system then downloads stock prices for the same dates.
+Negative
 
-Example:
+Neutral
 
-| Date  | Close Price |
-| ----- | ----------- |
-| Jan 1 | 2500        |
-| Jan 2 | 2525        |
-| Jan 3 | 2480        |
-| Jan 4 | 2510        |
+the final article score might still be positive because the important early sentences carry greater weight.
+
+Each article finally receives
+
+* average sentiment score
+* overall sentiment label
+* number of analysed sentences
 
 ---
 
-## Step 10: Determine Daily Price Direction
+# Step 7: Save Every Article
 
-For every trading day:
+Every analysed article is stored in a log.
 
-| Previous Close | Current Close | Direction |
-| -------------- | ------------- | --------- |
-| 2500           | 2525          | Up        |
-| 2525           | 2480          | Down      |
-| 2480           | 2510          | Up        |
+The log includes information like
 
-Only the direction matters at this stage.
+* date
+* ticker
+* article title
+* source
+* article URL
+* sentiment score
+* sentiment label
+* number of sentences analysed
 
----
+Each article also gets a unique identifier.
 
-## Step 11: Match Sentiment With Price Movement
+This prevents analysing the same article again in future runs.
 
-The system aligns:
+So if you run the program tomorrow,
 
-| Date  | Sentiment | Price Direction |
-| ----- | --------- | --------------- |
-| Jan 1 | Positive  | Up              |
-| Jan 2 | Positive  | Up              |
-| Jan 3 | Negative  | Down            |
-| Jan 4 | Positive  | Up              |
+old articles are skipped automatically.
 
-This allows direct comparison between news and stock behavior.
+Only new articles are analysed.
 
 ---
 
-## Step 12: Calculate Predictive Accuracy
+# Step 8: Calculate Daily Sentiment
 
-The key question becomes:
+After analysing all articles for the day,
 
-### Did positive news lead to an up day?
+the program combines them into **one daily sentiment value**.
 
-### Did negative news lead to a down day?
+Suppose today's articles are
 
-If yes:
+| Article | Score |
+| ------- | ----- |
+| 1       | 0.65  |
+| 2       | 0.30  |
+| 3       | -0.20 |
+| 4       | 0.50  |
 
-✔ Correct prediction
-
-If no:
-
-✘ Incorrect prediction
-
-Example:
-
-| Day | Sentiment | Market Move | Result    |
-| --- | --------- | ----------- | --------- |
-| 1   | Positive  | Up          | Correct   |
-| 2   | Positive  | Down        | Incorrect |
-| 3   | Negative  | Down        | Correct   |
-| 4   | Negative  | Up          | Incorrect |
-
-Accuracy:
+The daily sentiment becomes approximately
 
 ```
-Correct Predictions
-------------------
-Total Predictions
+Mean sentiment = 0.31
 ```
 
-Example:
+It also records
 
-```
-65%
-```
+* number of articles analysed
+* number of positive articles
+* number of negative articles
+* number of neutral articles
 
-This tells you how often sentiment agrees with actual stock movement.
+So instead of dozens of article scores,
+
+you get one summary for the day.
 
 ---
 
-## Step 13: Interactive Visualization
+# Step 9: Keep Historical Records
 
-The dashboard displays:
+The program does not overwrite previous results.
 
-### Upper Panel
+Instead,
 
-Stock price movement through time.
+every day's sentiment is appended to a historical database.
 
-You can see:
+Over time your file becomes something like
 
-* Uptrends
-* Downtrends
-* Major turning points
+| Date    | Mean Sentiment |
+| ------- | -------------- |
+| June 20 | 0.45           |
+| June 21 | -0.12          |
+| June 22 | 0.31           |
+| June 23 | 0.18           |
 
-### Lower Panel
-
-Daily sentiment values.
-
-You can visually compare:
-
-* News becoming positive
-* News becoming negative
-* How the stock reacts afterward
+Eventually this forms a complete sentiment time series.
 
 ---
 
-## Step 14: Highlight Winning Predictions
+# Step 10: Download Historical Price Data
 
-Special markers show:
+Next,
 
-### Green Marker
+the program downloads recent market prices for the same ticker.
 
-Positive sentiment and stock moved up.
+For every trading day it records
+
+* Open
+* High
+* Low
+* Close
+* Volume
+* Daily percentage return
+
+It also classifies the day's movement as
+
+* Up
+* Down
+* Flat
+
+---
+
+# Step 11: Match Sentiment with Price
+
+Now the interesting part.
+
+The sentiment history is matched with price history.
+
+For every date,
+
+the program compares
+
+Daily sentiment
+
+↓
+
+Market movement
+
+Example
+
+| Date      | Sentiment | Market |
+| --------- | --------- | ------ |
+| Monday    | Positive  | Up     |
+| Tuesday   | Negative  | Down   |
+| Wednesday | Positive  | Down   |
+
+The program checks whether sentiment correctly predicted the direction.
+
+For every day,
+
+it records
+
+```
+Match = True
+```
 
 or
 
-Negative sentiment and stock moved down.
-
-These are successful sentiment signals.
-
-### Red Marker
-
-Positive sentiment but stock fell.
-
-or
-
-Negative sentiment but stock rose.
-
-These are failed signals.
+```
+Match = False
+```
 
 ---
 
-## Step 15: What You Can Learn
+# Step 12: Calculate Agreement Rate
 
-After collecting several months of data, you can answer:
+Finally,
 
-### Is sentiment useful for this stock?
+the program computes
 
-Some stocks react strongly to news.
+> "How often did news sentiment agree with the actual market movement?"
 
-Others do not.
+Example
 
----
+```
+30 trading days
 
-### Does sentiment lead price?
+Correct = 19
 
-You can test:
+Agreement Rate = 63.3%
+```
 
-* Same-day effect
-* Next-day effect
-* Two-day effect
-
-Often next-day sentiment prediction is more useful than same-day prediction.
+This gives an indication of how closely same-day news sentiment aligns with price direction. It is descriptive rather than a true predictive backtest.
 
 ---
 
-### Which stocks respond most to news?
+# Step 13: Display a Comparison Table
 
-You can compare:
+The program prints a table like
 
-* Reliance
-* TCS
-* Infosys
-* HDFC Bank
-* Apple
-* Tesla
+| Date   | Sentiment | Articles | Price Change | Market Direction | Match |
+| ------ | --------- | -------- | ------------ | ---------------- | ----- |
+| 24 Jun | 0.43      | 12       | +1.8%        | Up               | ✓     |
+| 25 Jun | -0.21     | 8        | -0.9%        | Down             | ✓     |
+| 26 Jun | 0.18      | 10       | -0.5%        | Down             | ✗     |
 
-and identify which stocks are most sentiment-driven.
+This makes it easy to compare news sentiment with actual market behaviour day by day.
 
 ---
 
-### Can sentiment improve trading strategies?
+# Step 14: Create a Visualization
 
-You can eventually create rules such as:
+The program also saves a graph with two panels.
 
-* Buy when sentiment > +0.3
-* Sell when sentiment < -0.3
-* Hold otherwise
+### Upper panel
 
-and backtest whether these rules outperform buy-and-hold.
+Shows
 
-In essence, the entire pipeline converts **unstructured news articles → quantified daily sentiment → comparison with actual stock returns → measurement of predictive power**, creating a framework for testing whether news sentiment contains exploitable information for trading or investment decisions.
+Daily sentiment score
+
+Positive days appear above zero.
+
+Negative days appear below zero.
+
+You can immediately see periods of optimistic or pessimistic news.
+
+### Lower panel
+
+Shows
+
+Closing stock price
+
+Since both panels share the same dates,
+
+you can visually inspect whether
+
+* improving sentiment preceded price increases,
+* worsening sentiment coincided with declines,
+* or whether there was little relationship.
+
+---
+
+# Files Created
+
+For each ticker, the program creates several files:
+
+* **Article log:** Every analysed news article and its sentiment.
+* **Daily sentiment history:** One aggregated sentiment record per day.
+* **Price history:** Historical market prices for the ticker.
+* **Combined dataset:** Sentiment and price data merged by date.
+* **Plot image:** A chart comparing sentiment and price over time.
+
+Each ticker has its own separate set of files, so analyses remain independent.
+
+# In summary
+
+The code builds a complete **news sentiment tracking pipeline**:
+
+1. Accept a ticker.
+2. Search for relevant news.
+3. Download full articles.
+4. Clean the article text.
+5. Evaluate sentiment sentence by sentence.
+6. Aggregate to an article-level sentiment.
+7. Aggregate to a daily sentiment score.
+8. Save historical sentiment data without duplicating articles.
+9. Fetch historical price data.
+10. Compare daily sentiment with same-day price movement.
+11. Calculate how often sentiment and price direction agree.
+12. Produce a comparison table and a time-series plot.
+
+Over repeated daily runs, it accumulates a historical dataset that can be used to study the relationship between news sentiment and market movements for any supported financial instrument.
+
