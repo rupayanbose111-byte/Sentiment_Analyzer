@@ -1,0 +1,241 @@
+To run the complete sentiment-analysis system successfully, you'll need the following:
+
+## 1. Python Version
+
+Recommended:
+
+* Python 3.10
+* Python 3.11
+
+Avoid older versions (<3.9) because some AI and finance libraries may cause compatibility issues.
+
+---
+
+## 2. Hardware Requirements
+
+### Minimum
+
+* 8 GB RAM
+* Dual-core CPU
+* Stable internet connection
+
+### Recommended
+
+* 16 GB RAM
+* Modern i5/i7 or Ryzen processor
+
+### Optional (faster sentiment analysis)
+
+* NVIDIA GPU with CUDA support
+
+The sentiment model can run on CPU, but scoring many articles will be slower.
+
+---
+
+## 3. Required Python Packages
+
+Install all dependencies:
+
+```bash
+pip install pandas numpy yfinance feedparser requests beautifulsoup4 transformers torch plotly
+```
+
+### What each package does
+
+| Package        | Purpose                |
+| -------------- | ---------------------- |
+| pandas         | Data manipulation      |
+| numpy          | Numerical calculations |
+| yfinance       | Download stock prices  |
+| feedparser     | Read RSS news feeds    |
+| requests       | Download web pages     |
+| beautifulsoup4 | Extract article text   |
+| transformers   | AI sentiment model     |
+| torch          | Deep learning backend  |
+| plotly         | Interactive dashboard  |
+
+---
+
+## 4. Internet Access
+
+The script requires internet access because it:
+
+### Downloads news
+
+From RSS feeds such as:
+
+* Google News
+* Yahoo News
+
+### Downloads stock prices
+
+From Yahoo Finance
+
+### Downloads FinBERT model
+
+First run only.
+
+---
+
+## 5. FinBERT Model Download
+
+When you run the script for the first time:
+
+```text
+Loading FinBERT...
+```
+
+It will automatically download the financial sentiment model.
+
+Typical download size:
+
+* 400–500 MB
+
+After downloading once, it is stored locally and future runs are much faster.
+
+---
+
+## 6. Disk Space
+
+Minimum:
+
+* 2 GB free space
+
+Recommended:
+
+* 5 GB+
+
+This covers:
+
+* FinBERT model files
+* Historical sentiment CSV files
+* Temporary cache files
+
+---
+
+## 7. Time Required for First Run
+
+Approximate:
+
+| Task                 | Time        |
+| -------------------- | ----------- |
+| FinBERT download     | 2–10 min    |
+| News collection      | 10–30 sec   |
+| Article scraping     | 30–120 sec  |
+| Sentiment scoring    | 1–5 min     |
+| Dashboard generation | Few seconds |
+
+Total first run:
+
+**5–15 minutes**
+
+Subsequent runs are much faster.
+
+---
+
+## 8. Recommended Folder Structure
+
+```text
+Sentiment_Project/
+│
+├── sentiment_pipeline.py
+├── sentiment_history.csv
+├── article_log.csv
+│
+└── models/
+```
+
+The CSV files will gradually build your sentiment database.
+
+---
+
+## 9. Common Issues
+
+### News articles blocked
+
+Some websites prevent automated scraping.
+
+Result:
+
+```text
+Could not retrieve article
+```
+
+This is normal.
+
+The script simply skips that article.
+
+---
+
+### Yahoo Finance download error
+
+Possible causes:
+
+* Internet issue
+* Temporary Yahoo outage
+* Invalid ticker
+
+Example:
+
+```text
+RELIANCE.NS
+TCS.NS
+INFY.NS
+AAPL
+MSFT
+```
+
+---
+
+### Out of Memory
+
+Usually occurs if:
+
+* Too many articles are processed simultaneously.
+* Very old hardware.
+
+Reduce:
+
+```text
+NUM_ARTICLES_PER_QUERY
+```
+
+from 15 to 5.
+
+---
+
+## 10. For Meaningful Results
+
+Running once is not enough.
+
+The real value comes from:
+
+### Daily scheduled execution
+
+For example:
+
+```text
+Every trading day at 6 PM
+```
+
+Store:
+
+* Daily sentiment score
+* Number of articles
+* Price movement
+
+After:
+
+* 3 months
+* 6 months
+* 1 year
+
+you'll have a rich dataset for:
+
+* Sentiment accuracy
+* Correlation studies
+* Lead-lag analysis
+* Trading strategy backtesting
+* Sharpe ratio comparisons
+
+That historical database is what turns the project from a news reader into a genuine quantitative research tool.

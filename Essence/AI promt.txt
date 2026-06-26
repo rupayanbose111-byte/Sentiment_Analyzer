@@ -1,0 +1,38 @@
+**COMMAND**: look into all available codes there is in the internet for sentiment analysis and give me best place or way to look into news to track sentiment each day
+
+## REPLY ##: I'll research current sources and tools for this.Based on current options, here's the practical landscape — from "free and DIY" to "paid and reliable":
+
+ Best "build it yourself but smarter" approach
+If you want to keep doing it yourself rather than pay for an API, the realistic upgrade path over your two scripts is:
+- **Swap VADER for FinBERT** (`yiyanghkust/finbert-tone`) — you already had this commented out in your first script. VADER is a general lexicon; FinBERT is trained on financial language and handles things like "earnings beat estimates" correctly, where VADER often scores neutral.
+- **Use full article text, not just headlines** — headlines are short and often deliberately neutral/factual; body text carries more signal.
+- **Combine multiple sources** — Google News RSS + Yahoo Finance RSS + Finviz, since Google News RSS volume is reported to fluctuate inconsistently day to day for the same ticker, so a single source alone is unreliable for daily tracking.
+- **Run it daily, store the results, plot sentiment vs. price over time** — this is the actual structure that produces something useful (a time series), not just a one-off snapshot.
+
+## 
+For "best place to track daily sentiment" with the least effort: **Alpha Vantage's News & Sentiment endpoint** (free tier) for general market/stock sentiment, or **EODHD** if you want pre-computed daily aggregates per ticker without writing your own aggregation logic. Both will be far more reliable than headline-only VADER scraping, because the sentiment model is already finance-tuned and the data pipeline (dedup, rate limits, coverage) is already solved for you.
+
+*** FinBERT is the right tool because it understands financial language at the sentence level, not lexicon-matching. 
+The practical pattern for full articles:-
+
+1.Split the article into sentences (or paragraphs)
+2.Run FinBERT per-sentence (it's trained on financial corpora specifically for this — that's why it correctly handles things like "earnings missed estimates but guidance was raised")
+3.Aggregate sentence-level scores into one article score (mean, or weighted by sentence length/position — first 2-3 sentences of a news article usually carry the actual news, later ones are often boilerplate)
+Then aggregate article-level scores into a daily average, same as your second script's groupby pattern
+
+4. Clean the scraped text before scoring anything. Your first script's find_all('p') grabs every <p> tag indiscriminately — nav menus, related-article blurbs, ad copy, cookie notices. Garbage in, garbage sentiment out. Worth adding basic filtering (drop very short paragraphs, drop boilerplate phrases like "Sign up for our newsletter").
+
+\\Concrete plan\\
+
+Source: keep using free RSS (Google News + Yahoo Finance RSS for redundancy, since Google News volume is inconsistent day to day) for article links, or use Alpha Vantage just for the URL list, not its sentiment field, if you want broader coverage.
+Scrape: keep BeautifulSoup, but filter junk paragraphs before joining.
+Score: FinBERT, per-sentence, averaged per article.
+Aggregate: groupby ticker+date, mean score, same pattern as your Finviz script — that part of your code is already correct and reusable.
+Track over time: store daily results (CSV or simple DB) so you build a real time series instead of re-fetching from scratch each run — this is what actually lets you "track sentiment each day."
+
+**COMMAND** 
+write a python code using the above concrete plan — full-article scraping with junk filtering,
+1. Use FinBERT sentence-level scoring, daily aggregation, and persistence to CSV.
+2. Add on a plot of daily series, a neat comparison of everyday sentiment result and direction of price movement that day 
+3.Also give me a place to choose any ticker of which I want to analyse the sentiment. 
+4.Use any python module/packages necessary
