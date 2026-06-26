@@ -14,14 +14,8 @@ Pipeline:
   8. Append results to a per-ticker CSV so you build a real time series across runs
 
 Install deps:
-    pip install feedparser requests beautifulsoup4 transformers torch pandas
+    pip install feedparser requests beautifulsoup4 transformers torch pandas googlenewsdecoder yfinance matplotlib
 
-Run (interactive ticker prompt):
-    python sentiment_pipeline.py
-
-Run (specify ticker directly):
-    python sentiment_pipeline.py --ticker AAPL
-    python sentiment_pipeline.py --ticker GC=F --name "gold"
 """
 
 import re
