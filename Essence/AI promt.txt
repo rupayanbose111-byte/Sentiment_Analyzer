@@ -25,13 +25,16 @@ Then aggregate article-level scores into a daily average, same as your second sc
 \\Concrete plan\\
 
 Source: keep using free RSS (Google News + Yahoo Finance RSS for redundancy, since Google News volume is inconsistent day to day) for article links, or use Alpha Vantage just for the URL list, not its sentiment field, if you want broader coverage.
+One thing to keep in mind:
+Google changed the redirect encoding in 2024, breaking the old base64 decode trick; the reliable way now is to follow the redirect or use a maintained decoder. And following the redirect alone isn't enough (as your test just showed — it stays on news.google.com). The maintained fix is the googlenewsdecoder package, which extracts the encoded article ID, fetches the Google News article page to get a signature and timestamp, then posts those to Google's internal batchexecute endpoint to get the real source URL back.
 Scrape: keep BeautifulSoup, but filter junk paragraphs before joining.
 Score: FinBERT, per-sentence, averaged per article.
 Aggregate: groupby ticker+date, mean score, same pattern as your Finviz script — that part of your code is already correct and reusable.
 Track over time: store daily results (CSV or simple DB) so you build a real time series instead of re-fetching from scratch each run — this is what actually lets you "track sentiment each day."
 
 **COMMAND** 
-write a python code using the above concrete plan — full-article scraping with junk filtering,
+
+write a python code using the above "concrete plan" — full-article scraping with junk filtering,
 1. Use FinBERT sentence-level scoring, daily aggregation, and persistence to CSV.
 2. Add on a plot of daily series, a neat comparison of everyday sentiment result and direction of price movement that day 
 3.Also give me a place to choose any ticker of which I want to analyse the sentiment. 
